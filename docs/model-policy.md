@@ -17,7 +17,7 @@ produce `review_required` or `policy_blocked`, but not `illegal`.
 | Signal source | Allowed automatic outcome | Required next step |
 | --- | --- | --- |
 | Exact SHA-256 known match | `blocked` | Audit and operator workflow |
-| PDQ known match above threshold | `blocked` or `review_required` | Threshold evidence and audit |
+| PDQ known match within distance threshold | `blocked` | Threshold evidence and audit |
 | Unknown-content classifier | `review_required` or `policy_blocked` | Human review or operator policy |
 | Model unavailable | `review_required` | Retry, fallback, or manual queue |
 

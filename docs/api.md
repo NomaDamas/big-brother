@@ -29,12 +29,35 @@ curl -i -X POST http://localhost:8080/v1/reviews/review_1/override \
   -d '{"decision":"allowed","reason":"false positive after human review"}'
 ```
 
+A non-empty `reason` is required; an empty reason returns `400`
+(`override_reason_required`).
+
+> Admin token enforcement is active only when `BIG_BROTHER_DEV_MODE=false`. The
+> default development configuration (`BIG_BROTHER_DEV_MODE=true`) bypasses the
+> token check, so the `Authorization` header is accepted but not required. When
+> enforced, send the token via `Authorization: Bearer <token>` or the
+> `X-Admin-Token` header. A missing or wrong token returns `401`
+> (`admin_token_required`).
+
 ## Audit Export
 
 ```bash
 curl -i http://localhost:8080/v1/audit/export \
   -H "Authorization: Bearer $BIG_BROTHER_ADMIN_TOKEN"
 ```
+
+The response is newline-delimited JSON (`application/x-ndjson`). Like the review
+override endpoint, the admin token is enforced only when
+`BIG_BROTHER_DEV_MODE=false`.
+
+## Hash Bank Import Status
+
+```bash
+curl -i http://localhost:8080/v1/hashbank/import-status
+```
+
+Returns the number of active hash entries currently loaded (`active_entries`)
+and the configured `hashbank_path`.
 
 ## Policy Validation
 
