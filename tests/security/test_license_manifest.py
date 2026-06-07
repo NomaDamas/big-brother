@@ -12,4 +12,5 @@ def test_every_default_model_has_license_entry() -> None:
     assert "ThreatExchange PDQ reference" in names
     assert "FAISS optional similarity index" in names
     assert "fixture_classifier" in names
+    assert "Falconsai/nsfw_image_detection" in names
     assert manifest.entries_without_license() == ()

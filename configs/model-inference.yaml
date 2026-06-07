@@ -1,0 +1,16 @@
+model_name: Falconsai/nsfw_image_detection
+model_revision: main
+device: cuda
+top_k: 3
+threshold: 0.7
+threshold_owner: security
+threshold_reviewed_at: "2026-06-07"
+threshold_rationale: Route high-confidence explicit classifier output to human review; below-threshold output records no_action.
+image_size: 224
+timeout_seconds: 60
+function_to_apply: softmax
+explicit_labels:
+  - nsfw
+  - explicit
+  - porn
+  - sexy

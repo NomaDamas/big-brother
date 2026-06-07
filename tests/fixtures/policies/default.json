@@ -4,7 +4,10 @@
     {
       "category": "explicit",
       "minimum_score": 0.8,
-      "action": "review_required"
+      "action": "review_required",
+      "owner": "security",
+      "reviewed_at": "2026-06-07",
+      "rationale": "Route high-confidence explicit classifier output to human review; never classify model-only output as illegal."
     }
   ]
 }

@@ -39,3 +39,18 @@ def test_model_only_signal_routes_to_review() -> None:
 
     assert decision.outcome == "review_required"
     assert decision.reason == "policy_model_signal"
+
+
+def test_model_below_threshold_signal_allows_without_review() -> None:
+    signal = ModelSignal(
+        category=ModelSignalCategory.EXPLICIT,
+        score=0.2,
+        action=ModelSignalAction.NO_ACTION,
+        model_name="fixture-nsfw",
+        model_version="0.1.0",
+    )
+
+    decision = ModerationDecision.from_model_signal(signal)
+
+    assert decision.outcome == "allowed"
+    assert decision.reason == "model_below_threshold"

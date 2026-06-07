@@ -17,6 +17,7 @@ class ModelSignalCategory(StrEnum):
 
 
 class ModelSignalAction(StrEnum):
+    NO_ACTION = "no_action"
     REVIEW_REQUIRED = "review_required"
     POLICY_BLOCKED = "policy_blocked"
     ILLEGAL = "illegal"
@@ -41,6 +42,8 @@ class ModerationDecision(BaseModel):
     @classmethod
     def from_model_signal(cls, signal: ModelSignal) -> Self:
         match signal.action:
+            case ModelSignalAction.NO_ACTION:
+                return cls(outcome="allowed", reason="model_below_threshold")
             case ModelSignalAction.REVIEW_REQUIRED | ModelSignalAction.POLICY_BLOCKED:
                 return cls(outcome=signal.action.value, reason="policy_model_signal")
             case ModelSignalAction.ILLEGAL:
@@ -66,7 +69,11 @@ class Policy(BaseModel):
     def reject_model_illegal_action(self) -> Self:
         for rule in self.model_signals:
             match rule.action:
-                case ModelSignalAction.REVIEW_REQUIRED | ModelSignalAction.POLICY_BLOCKED:
+                case (
+                    ModelSignalAction.NO_ACTION
+                    | ModelSignalAction.REVIEW_REQUIRED
+                    | ModelSignalAction.POLICY_BLOCKED
+                ):
                     continue
                 case ModelSignalAction.ILLEGAL:
                     raise IllegalModelOnlyDecisionError

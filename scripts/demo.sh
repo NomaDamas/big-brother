@@ -18,7 +18,7 @@ trap cleanup EXIT
 
 mkdir -p .omo/evidence
 rm -rf "$session_dir"
-uv run uvicorn big_brother.api.app:create_default_app --factory --host 127.0.0.1 --port "$port" >"$server_log" 2>&1 &
+uv run --no-dev uvicorn big_brother.api.app:create_default_app --factory --host 127.0.0.1 --port "$port" >"$server_log" 2>&1 &
 server_pid="$!"
 
 for _ in 1 2 3 4 5 6 7 8 9 10; do
@@ -28,9 +28,9 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do
   sleep 1
 done
 
-uv run big-brother demo seed --output-dir "$session_dir"
+uv run --no-dev big-brother demo seed --output-dir "$session_dir"
 scan_response="$(curl -fsS -F "image=@${session_dir}/known_match.jpg;type=image/jpeg" "${base_url}/v1/scan")"
-model_response="$(uv run big-brother decision model-signal --category explicit --score 0.91)"
+model_response="$(uv run --no-dev big-brother decision model-signal --category explicit --score 0.91)"
 
 case "$scan_response" in
   *'"decision":"blocked"'*)

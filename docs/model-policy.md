@@ -1,7 +1,7 @@
 # Model Policy
 
 Unknown-content classifiers are optional triage inputs. A model signal must not determine illegality. The default domain rule is that a model-only signal can
-produce `review_required` or `policy_blocked`, but not `illegal`.
+produce `no_action`, `review_required`, or `policy_blocked`, but not `illegal`.
 
 ## Required controls
 
@@ -18,8 +18,21 @@ produce `review_required` or `policy_blocked`, but not `illegal`.
 | --- | --- | --- |
 | Exact SHA-256 known match | `blocked` | Audit and operator workflow |
 | PDQ known match within distance threshold | `blocked` | Threshold evidence and audit |
-| Unknown-content classifier | `review_required` or `policy_blocked` | Human review or operator policy |
+| Unknown-content classifier below threshold | `no_action` | Continue normal non-model decision flow |
+| Unknown-content classifier above threshold | `review_required` or `policy_blocked` | Human review or operator policy |
 | Model unavailable | `review_required` | Retry, fallback, or manual queue |
+
+## Default classifier threshold
+
+The Slurm GPU verification config uses `Falconsai/nsfw_image_detection`, whose
+current Hugging Face model card lists Apache-2.0 licensing. The default
+threshold is `0.7` for labels `nsfw`, `explicit`, `porn`, and `sexy`.
+
+- Owner: security
+- Review date: 2026-06-07
+- Rationale: route high-confidence explicit classifier output to human review;
+  below-threshold output records `no_action` and must not become an illegality
+  finding.
 
 ## Model acquisition
 
@@ -37,8 +50,9 @@ uv run big-brother licenses report
 ```
 
 The default manifest lists project code, Triton, the PDQ reference ecosystem,
-optional FAISS indexing, and the synthetic `fixture_classifier`. No default
-entry may have an empty license, unknown license, or noncommercial-only license.
+optional FAISS indexing, the synthetic `fixture_classifier`, and the optional
+`Falconsai/nsfw_image_detection` classifier. No default entry may have an empty
+license, unknown license, or noncommercial-only license.
 
 ## Secrets and telemetry
 

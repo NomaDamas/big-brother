@@ -71,5 +71,12 @@ def default_license_manifest() -> LicenseManifest:
                 bundled_by_default=True,
                 status="metadata fixture; no model weights bundled",
             ),
+            LicenseEntry(
+                name="Falconsai/nsfw_image_detection",
+                license_id="Apache-2.0",
+                role="optional Hugging Face NSFW image classifier",
+                bundled_by_default=False,
+                status="operator-enabled model; model card reviewed 2026-06-07",
+            ),
         ),
     )
