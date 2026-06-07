@@ -1,0 +1,36 @@
+# Local environments and secrets
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+
+# Python caches and packaging artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.basedpyright/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Local OMO/Codex orchestration state and evidence
+.omo/
+
+# Generated docs and local runtime data
+site/
+*.sqlite
+*.db
+*.jsonl
+*.log
+!tests/fixtures/**/*.jsonl
+
+# OS/editor files
+.DS_Store
+.idea/
+.vscode/

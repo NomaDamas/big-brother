@@ -1,0 +1,11 @@
+{
+  "name": "bad-policy",
+  "model_signals": [
+    {
+      "category": "explicit",
+      "minimum_score": 0.5,
+      "action": "illegal"
+    }
+  ],
+  "terms": []
+}

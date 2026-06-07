@@ -1,0 +1,10 @@
+{
+  "name": "default",
+  "model_signals": [
+    {
+      "category": "explicit",
+      "minimum_score": 0.8,
+      "action": "review_required"
+    }
+  ]
+}

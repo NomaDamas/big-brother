@@ -1,0 +1,14 @@
+{
+  "include": ["src", "tests", "scripts"],
+  "executionEnvironments": [
+    {
+      "root": ".",
+      "extraPaths": ["src"]
+    }
+  ],
+  "extraPaths": ["src"],
+  "venvPath": ".",
+  "venv": ".venv",
+  "typeCheckingMode": "all",
+  "reportMissingTypeStubs": "none"
+}

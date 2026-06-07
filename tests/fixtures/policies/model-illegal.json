@@ -1,0 +1,10 @@
+{
+  "name": "model-illegal",
+  "model_signals": [
+    {
+      "category": "explicit",
+      "minimum_score": 0.8,
+      "action": "illegal"
+    }
+  ]
+}

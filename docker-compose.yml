@@ -1,0 +1,43 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      BIG_BROTHER_DEV_MODE: ${BIG_BROTHER_DEV_MODE:-true}
+      BIG_BROTHER_ADMIN_TOKEN: ${BIG_BROTHER_ADMIN_TOKEN:-}
+    ports:
+      - "${BIG_BROTHER_API_PORT:-8080}:8080"
+    volumes:
+      - big_brother_audit:/app/.omo/evidence
+    depends_on:
+      triton:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "uv", "run", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=5).read()"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  triton:
+    image: nvcr.io/nvidia/tritonserver:26.05-py3
+    command:
+      - tritonserver
+      - --model-repository=/models
+      - --strict-model-config=true
+    ports:
+      - "${BIG_BROTHER_TRITON_HTTP_PORT:-8000}:8000"
+      - "${BIG_BROTHER_TRITON_GRPC_PORT:-8001}:8001"
+      - "${BIG_BROTHER_TRITON_METRICS_PORT:-8002}:8002"
+    volumes:
+      - ./model_repository:/models:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  big_brother_audit:

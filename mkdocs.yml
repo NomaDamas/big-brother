@@ -1,0 +1,10 @@
+site_name: big-brother
+site_description: Compliance-support image moderation tooling.
+theme:
+  name: mkdocs
+nav:
+  - Home: index.md
+  - Compliance: compliance.md
+  - Model Policy: model-policy.md
+  - Operator Guide: operator-guide.md
+  - API: api.md

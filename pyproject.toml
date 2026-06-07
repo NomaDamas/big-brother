@@ -1,0 +1,64 @@
+[project]
+name = "big-brother"
+version = "0.1.0"
+description = "Compliance-support image moderation tooling for local GPU servers."
+readme = "README.md"
+requires-python = ">=3.13"
+license = "MIT"
+dependencies = [
+  "fastapi>=0.116.0",
+  "pydantic>=2.11.0",
+  "rich>=14.0.0",
+  "typer>=0.16.0",
+  "uvicorn[standard]>=0.35.0",
+]
+
+[project.scripts]
+big-brother = "big_brother.cli:main"
+
+[dependency-groups]
+dev = [
+  "basedpyright>=1.31.0",
+  "httpx2[brotli,http2,zstd]>=2.3.0",
+  "mkdocs>=1.6.0",
+  "pip-audit>=2.10.0",
+  "pytest>=8.4.0",
+  "python-multipart>=0.0.32",
+  "ruff>=0.12.0",
+]
+
+[tool.uv]
+package = true
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "COM812",
+  "D100",
+  "D101",
+  "D102",
+  "D103",
+  "D104",
+  "D105",
+  "D107",
+  "D203",
+  "D213",
+  "FLY002",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/**/*.py" = ["INP001"]
+"tests/**/*.py" = ["S101", "S603"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.basedpyright]
+include = ["src", "tests"]
+typeCheckingMode = "all"
+reportMissingTypeStubs = "none"
