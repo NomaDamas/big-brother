@@ -7,49 +7,31 @@ from io import BytesIO
 from typing import Protocol, runtime_checkable
 
 from big_brother.domain.policy import ModelSignal, ModelSignalAction, ModelSignalCategory
+from big_brother.models.batch import BatchCalibrationConfig, calibrate_batch_size
 from big_brother.models.config import DeviceName, ModerationInferenceConfig
-
-
-@dataclass(frozen=True, slots=True)
-class PipelinePrediction:
-    label: str
-    score: float
-
-
-class PipelineImage(Protocol):
-    mode: str
-    size: tuple[int, int]
-
-    def convert(self, mode: str) -> PipelineImage: ...
-
-    def resize(self, size: tuple[int, int]) -> PipelineImage: ...
+from big_brother.models.pipeline_types import (
+    CreatedPipeline,
+    PipelineImage,
+    PipelinePrediction,
+    is_pipeline_row,
+    prediction_batches,
+    predictions_from_rows,
+    row_batches,
+)
 
 
 class ModerationPipeline(Protocol):
     def __call__(
         self,
-        image: PipelineImage,
+        image: PipelineImage | Sequence[PipelineImage],
         *,
         top_k: int,
         function_to_apply: str,
-    ) -> Sequence[PipelinePrediction]: ...
+        batch_size: int | None = None,
+    ) -> Sequence[PipelinePrediction] | Sequence[Sequence[PipelinePrediction]]: ...
 
 
 PipelineFactory = Callable[[ModerationInferenceConfig], ModerationPipeline]
-
-
-class PipelineRow(Protocol):
-    def __getitem__(self, key: str) -> str | float: ...
-
-
-class CreatedPipeline(Protocol):
-    def __call__(
-        self,
-        image: PipelineImage,
-        *,
-        top_k: int,
-        function_to_apply: str,
-    ) -> Sequence[PipelineRow]: ...
 
 
 @runtime_checkable
@@ -82,10 +64,7 @@ class ImageModule(Protocol):
 class OptionalModelDependencyError(Exception):
     def __init__(self, *, package: str) -> None:
         self.package: str = package
-        message = (
-            "install GPU inference dependencies with `uv sync --group gpu`: "
-            f"{package}"
-        )
+        message = f"install GPU inference dependencies with `uv sync --group gpu`: {package}"
         super().__init__(message)
 
 
@@ -104,32 +83,89 @@ class TransformersImageModerationClient:
         self._config: ModerationInferenceConfig = config
         factory = pipeline_factory or default_pipeline_factory
         self._pipeline: ModerationPipeline = factory(config)
+        self._resolved_batch_size: int | None = None
 
     def classify(self, *, image_bytes: bytes) -> ModelSignal:
-        image = _open_image(
-            image_bytes=image_bytes,
-            image_size=self._config.image_size,
+        return self.classify_many(image_bytes_list=(image_bytes,))[0]
+
+    def classify_many(self, *, image_bytes_list: Sequence[bytes]) -> tuple[ModelSignal, ...]:
+        if not image_bytes_list:
+            return ()
+        images = tuple(
+            _open_image(
+                image_bytes=image_bytes,
+                image_size=self._config.image_size,
+            )
+            for image_bytes in image_bytes_list
         )
         predictions = self._pipeline(
-            image,
+            list(images),
             top_k=self._config.top_k,
             function_to_apply=self._config.function_to_apply,
+            batch_size=self._batch_size(sample_image=images[0]),
         )
-        explicit_prediction = _best_explicit_prediction(
-            predictions=predictions,
-            explicit_labels=self._config.explicit_labels,
+        return tuple(
+            _signal_from_predictions(
+                predictions=item_predictions,
+                config=self._config,
+            )
+            for item_predictions in prediction_batches(predictions)
         )
-        action = _action_for_score(
-            score=explicit_prediction.score,
-            threshold=self._config.threshold,
+
+    @property
+    def resolved_batch_size(self) -> int | None:
+        return self._resolved_batch_size
+
+    def _batch_size(self, *, sample_image: PipelineImage) -> int:
+        if self._resolved_batch_size is not None:
+            return self._resolved_batch_size
+        configured_batch_size = self._config.batch_size
+        match configured_batch_size:
+            case "auto":
+                self._resolved_batch_size = calibrate_batch_size(
+                    config=BatchCalibrationConfig(
+                        minimum=self._config.auto_batch_min,
+                        maximum=self._config.auto_batch_max,
+                        growth_factor=self._config.auto_batch_growth_factor,
+                    ),
+                    probe=lambda batch_size: self._probe_batch_size(
+                        sample_image=sample_image,
+                        batch_size=batch_size,
+                    ),
+                )
+            case int() as explicit_batch_size:
+                self._resolved_batch_size = explicit_batch_size
+        return self._resolved_batch_size
+
+    def _probe_batch_size(self, *, sample_image: PipelineImage, batch_size: int) -> None:
+        _ = self._pipeline(
+            [sample_image for _ in range(batch_size)],
+            top_k=self._config.top_k,
+            function_to_apply=self._config.function_to_apply,
+            batch_size=batch_size,
         )
-        return ModelSignal(
-            category=ModelSignalCategory.EXPLICIT,
-            score=explicit_prediction.score,
-            action=action,
-            model_name=self._config.model_name,
-            model_version=self._config.model_revision,
-        )
+
+
+def _signal_from_predictions(
+    *,
+    predictions: Sequence[PipelinePrediction],
+    config: ModerationInferenceConfig,
+) -> ModelSignal:
+    explicit_prediction = _best_explicit_prediction(
+        predictions=predictions,
+        explicit_labels=config.explicit_labels,
+    )
+    action = _action_for_score(
+        score=explicit_prediction.score,
+        threshold=config.threshold,
+    )
+    return ModelSignal(
+        category=ModelSignalCategory.EXPLICIT,
+        score=explicit_prediction.score,
+        action=action,
+        model_name=config.model_name,
+        model_version=config.model_revision,
+    )
 
 
 def default_pipeline_factory(config: ModerationInferenceConfig) -> ModerationPipeline:
@@ -156,20 +192,22 @@ class HuggingFacePipeline:
 
     def __call__(
         self,
-        image: PipelineImage,
+        image: PipelineImage | Sequence[PipelineImage],
         *,
         top_k: int,
         function_to_apply: str,
-    ) -> Sequence[PipelinePrediction]:
+        batch_size: int | None = None,
+    ) -> Sequence[PipelinePrediction] | Sequence[Sequence[PipelinePrediction]]:
         rows = self.created_pipeline(
             image,
             top_k=top_k,
             function_to_apply=function_to_apply,
+            batch_size=batch_size,
         )
-        return tuple(
-            PipelinePrediction(label=str(row["label"]), score=float(row["score"]))
-            for row in rows
-        )
+        batches = row_batches(rows)
+        if len(batches) == 1 and is_pipeline_row(rows[0]):
+            return predictions_from_rows(batches[0])
+        return tuple(predictions_from_rows(batch) for batch in batches)
 
 
 def cuda_is_available() -> bool:

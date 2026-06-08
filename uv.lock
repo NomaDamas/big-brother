@@ -49,6 +49,7 @@ name = "big-brother"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "anyio" },
     { name = "fastapi" },
     { name = "pydantic" },
     { name = "python-multipart" },
@@ -63,6 +64,7 @@ dev = [
     { name = "basedpyright" },
     { name = "httpx2", extra = ["brotli", "http2", "zstd"] },
     { name = "mkdocs" },
+    { name = "pillow" },
     { name = "pip-audit" },
     { name = "pytest" },
     { name = "ruff" },
@@ -75,6 +77,7 @@ gpu = [
 
 [package.metadata]
 requires-dist = [
+    { name = "anyio", specifier = ">=4.11.0" },
     { name = "fastapi", specifier = ">=0.116.0" },
     { name = "pydantic", specifier = ">=2.11.0" },
     { name = "python-multipart", specifier = ">=0.0.32" },
@@ -89,6 +92,7 @@ dev = [
     { name = "basedpyright", specifier = ">=1.31.0" },
     { name = "httpx2", extras = ["brotli", "http2", "zstd"], specifier = ">=2.3.0" },
     { name = "mkdocs", specifier = ">=1.6.0" },
+    { name = "pillow", specifier = ">=11.0.0" },
     { name = "pip-audit", specifier = ">=2.10.0" },
     { name = "pytest", specifier = ">=8.4.0" },
     { name = "ruff", specifier = ">=0.12.0" },

@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 license = "MIT"
 dependencies = [
+  "anyio>=4.11.0",
   "fastapi>=0.116.0",
   "pydantic>=2.11.0",
   "python-multipart>=0.0.32",
@@ -23,6 +24,7 @@ dev = [
   "basedpyright>=1.31.0",
   "httpx2[brotli,http2,zstd]>=2.3.0",
   "mkdocs>=1.6.0",
+  "pillow>=11.0.0",
   "pip-audit>=2.10.0",
   "pytest>=8.4.0",
   "ruff>=0.12.0",

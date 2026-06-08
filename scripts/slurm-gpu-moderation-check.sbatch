@@ -22,25 +22,30 @@ export HF_HUB_DISABLE_TELEMETRY=1
 export TRANSFORMERS_CACHE="${HF_HOME}/transformers"
 mkdir -p "${HF_HOME}" "${TRANSFORMERS_CACHE}"
 
-image_path="$(mktemp --suffix=.png)"
+image_path_one="$(mktemp --suffix=.png)"
+image_path_two="$(mktemp --suffix=.png)"
 cleanup() {
-  rm -f "${image_path}"
+  rm -f "${image_path_one}" "${image_path_two}"
   rm -f "${root_stdout}" "${root_stderr}"
 }
 trap cleanup EXIT
 
-uv run --no-dev --with pillow python - "${image_path}" <<'PY'
+uv run --no-dev --with pillow python - "${image_path_one}" "${image_path_two}" <<'PY'
 from pathlib import Path
 from sys import argv
 
 from PIL import Image
 
-image = Image.new("RGB", (224, 224), color=(32, 96, 160))
-image.save(Path(argv[1]))
+colors = ((32, 96, 160), (160, 96, 32))
+for path, color in zip(argv[1:], colors, strict=True):
+    image = Image.new("RGB", (224, 224), color=color)
+    image.save(Path(path))
 PY
 
 nvidia-smi
 uv run --no-dev --group gpu python -m big_brother.models.moderation_check \
   --config configs/model-inference.yaml \
-  --image "${image_path}" \
+  --image "${image_path_one}" \
+  --image "${image_path_two}" \
+  --coalesce-requests \
   --require-cuda

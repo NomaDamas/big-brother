@@ -8,6 +8,13 @@ threshold_reviewed_at: "2026-06-07"
 threshold_rationale: Route high-confidence explicit classifier output to human review; below-threshold output records no_action.
 image_size: 224
 timeout_seconds: 60
+batch_size: auto
+auto_batch_min: 1
+auto_batch_max: 64
+auto_batch_growth_factor: 2
+queue_max_batch_size: 8
+queue_max_wait_ms: 25
+queue_max_pending: 1024
 function_to_apply: softmax
 explicit_labels:
   - nsfw

@@ -1,12 +1,9 @@
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from big_brother.domain.policy import ModelSignalAction, ModelSignalCategory
 from big_brother.models.config import ModerationInferenceConfig
-from big_brother.models.hf_moderation import (
-    PipelineImage,
-    PipelinePrediction,
-    TransformersImageModerationClient,
-)
+from big_brother.models.hf_moderation import TransformersImageModerationClient
+from big_brother.models.pipeline_types import PipelineImage, PipelinePrediction
 
 EXPECTED_TOP_K = 5
 EXPECTED_NSFW_SCORE = 0.91
@@ -17,16 +14,17 @@ EXPECTED_IMAGE_SIZE = 64
 class RecordingPipeline:
     def __init__(self, predictions: tuple[PipelinePrediction, ...]) -> None:
         self.predictions: tuple[PipelinePrediction, ...] = predictions
-        self.calls: list[tuple[PipelineImage, int, str]] = []
+        self.calls: list[tuple[PipelineImage | Sequence[PipelineImage], int, str, int | None]] = []
 
     def __call__(
         self,
-        image: PipelineImage,
+        image: PipelineImage | Sequence[PipelineImage],
         *,
         top_k: int,
         function_to_apply: str,
+        batch_size: int | None = None,
     ) -> tuple[PipelinePrediction, ...]:
-        self.calls.append((image, top_k, function_to_apply))
+        self.calls.append((image, top_k, function_to_apply, batch_size))
         return self.predictions
 
 
@@ -48,10 +46,13 @@ def test_transformers_moderation_client_passes_configured_hyperparameters_to_pip
     _ = client.classify(image_bytes=_minimal_png())
 
     assert pipeline.calls
-    image, top_k, function_to_apply = pipeline.calls[0]
+    image_or_images, top_k, function_to_apply, batch_size = pipeline.calls[0]
+    assert isinstance(image_or_images, list)
+    image = image_or_images[0]
     assert image.size == (EXPECTED_IMAGE_SIZE, EXPECTED_IMAGE_SIZE)
     assert top_k == EXPECTED_TOP_K
     assert function_to_apply == "softmax"
+    assert batch_size == 1
 
 
 def test_transformers_moderation_client_maps_nsfw_label_above_threshold_to_review_signal() -> None:
