@@ -1,3 +1,4 @@
+import hmac
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -282,7 +283,9 @@ def _admin_token_matches(
     if expected is None:
         return False
     bearer = f"Bearer {expected}"
-    return authorization == bearer or token == expected
+    if authorization is not None and hmac.compare_digest(authorization, bearer):
+        return True
+    return token is not None and hmac.compare_digest(token, expected)
 
 
 def _structured_response(*, error: StructuredApiError) -> JSONResponse:
