@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="big-brother-thumbnail.png" alt="big-brother — dystopian propaganda poster reading 'BIG BROTHER IS WATCHING YOU' over a surveilled Korean cityscape" width="420">
+</p>
+
 # big-brother
 
 **Auditable, local-first image-moderation building blocks for operators who are
