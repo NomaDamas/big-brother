@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-
 def test_default_app_loads_operator_hashbank_from_env(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -42,7 +41,6 @@ def test_production_default_app_requires_hashbank_path(monkeypatch: pytest.Monke
         _ = create_default_app()
 
     assert "BIG_BROTHER_HASHBANK_PATH" in str(error.value)
-
 
 
 def test_production_default_app_rejects_missing_hashbank_file(

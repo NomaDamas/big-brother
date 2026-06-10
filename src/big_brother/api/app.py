@@ -37,12 +37,8 @@ class ModelModerator(Protocol):
     def classify(self, *, image_bytes: bytes) -> ModelSignal: ...
 
 
-
-
 class ProductionConfigError(RuntimeError):
     pass
-
-
 
 
 class ApiSettings(BaseModel):
@@ -369,8 +365,7 @@ def _model_moderator_from_env() -> ModelModerator | None:
     config_path = _env_path("BIG_BROTHER_MODEL_CONFIG_PATH")
     if config_path is None:
         message = (
-            "BIG_BROTHER_MODEL_CONFIG_PATH is required when "
-            "BIG_BROTHER_MODEL_TRIAGE_ENABLED=true"
+            "BIG_BROTHER_MODEL_CONFIG_PATH is required when BIG_BROTHER_MODEL_TRIAGE_ENABLED=true"
         )
         raise ProductionConfigError(message)
     return TransformersImageModerationClient(config=load_moderation_config(config_path))

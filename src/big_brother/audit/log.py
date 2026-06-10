@@ -25,7 +25,6 @@ class ScanAuditOutcome(BaseModel):
     decision_reason: str | None = None
 
 
-
 class AuditLog:
     def __init__(self, *, path: Path) -> None:
         self._path: Path = path

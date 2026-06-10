@@ -37,7 +37,9 @@ def test_scan_known_match_returns_blocked_json() -> None:
 def test_scan_routes_unknown_upload_to_model_review() -> None:
     client = TestClient(
         create_app(
-            settings=ApiSettings(model_moderator=FakeModelModerator(action=ModelSignalAction.REVIEW_REQUIRED)),
+            settings=ApiSettings(
+                model_moderator=FakeModelModerator(action=ModelSignalAction.REVIEW_REQUIRED)
+            ),
         ),
     )
 
@@ -54,7 +56,11 @@ def test_scan_routes_unknown_upload_to_model_review() -> None:
 
 def test_scan_allows_unknown_upload_when_model_below_threshold() -> None:
     client = TestClient(
-        create_app(settings=ApiSettings(model_moderator=FakeModelModerator(action=ModelSignalAction.NO_ACTION))),
+        create_app(
+            settings=ApiSettings(
+                model_moderator=FakeModelModerator(action=ModelSignalAction.NO_ACTION)
+            )
+        ),
     )
 
     response = client.post(
