@@ -46,11 +46,14 @@ server, with
 **no telemetry and no external endpoints by default**. It provides auditable
 building blocks for:
 
-- **Known-content matching** — exact SHA-256 and PDQ perceptual-hash matching
-  against authorized hash banks.
-- **Optional model triage** — local Hugging Face / Triton classifiers that route
-  *uncertain* content to human review. A model signal never decides legality on
-  its own; below-threshold output records `no_action`.
+- **Known-content matching** — Upload scanning computes SHA-256 exact matches
+  against operator-authorized hash banks. PDQ support is for precomputed hash-bank entries and matcher workflows; the default upload endpoint does not
+  compute PDQ hashes from images yet.
+- **Optional model triage** — local Hugging Face classifiers can be enabled by
+  operators to route *uncertain* uploads to human review. The default Compose
+  path keeps model triage disabled until `BIG_BROTHER_MODEL_TRIAGE_ENABLED=true`
+  and a local model config are supplied. A model signal never decides legality
+  on its own; below-threshold output records `no_action`.
 - **Operator-controlled workflows** — human review, overrides with required
   reasons, and decision states you can defend.
 - **Audit trail** — every model signal, override, and policy change is logged for
@@ -75,10 +78,17 @@ serving. See [`docs/operator-guide.md`](docs/operator-guide.md) for prerequisite
 and [`docs/release-checklist.md`](docs/release-checklist.md) before going live.
 
 ```bash
-cp .env.example .env   # set BIG_BROTHER_ADMIN_TOKEN before production use
+mkdir -p data/hashbanks
+cp .env.example .env   # replace BIG_BROTHER_ADMIN_TOKEN before first start
+# add an authorized JSONL hash bank at data/hashbanks/operator-known-match.jsonl
 docker compose up -d --build
 ./scripts/health-check.sh
 ```
+
+Production mode (`BIG_BROTHER_DEV_MODE=false`) requires a non-placeholder admin
+token and a non-empty configured hash bank. Missing or invalid production
+hash-bank configuration fails startup instead of silently scanning test fixtures
+or an empty set.
 
 ## License
 

@@ -36,3 +36,23 @@ def test_docs_do_not_make_forbidden_affirmative_claims() -> None:
 
     assert "guaranteed compliance" not in combined
     assert "AI determines illegality" not in combined
+
+
+def test_public_docs_describe_scan_scope_truthfully() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    api = (ROOT / "docs" / "api.md").read_text(encoding="utf-8")
+
+    assert "Upload scanning computes SHA-256 exact matches" in readme
+    assert "PDQ support is for precomputed hash-bank entries" in readme
+    assert "does not compute PDQ hashes for uploads" in api
+    assert "BIG_BROTHER_MODEL_TRIAGE_ENABLED=false" in api
+
+
+def test_operator_guide_covers_production_configuration() -> None:
+    guide = (ROOT / "docs" / "operator-guide.md").read_text(encoding="utf-8")
+
+    assert "BIG_BROTHER_HASHBANK_PATH" in guide
+    assert "BIG_BROTHER_DEV_MODE=false" in guide
+    assert "BIG_BROTHER_ADMIN_TOKEN" in guide
+    assert "read-only" in guide
+    assert "missing or empty production hash bank" in guide

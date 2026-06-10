@@ -5,7 +5,7 @@ import typer
 from rich.console import Console
 
 from big_brother import __version__
-from big_brother.audit.log import AuditLog
+from big_brother.audit.log import AuditLog, ScanAuditOutcome
 from big_brother.decision.engine import DecisionEngine
 from big_brother.decision.review import HumanReviewWorkflow, MissingOverrideReasonError
 from big_brother.domain.policy import ModelSignal, ModelSignalAction, ModelSignalCategory
@@ -168,7 +168,7 @@ def audit_demo_record(
     audit_log.record_scan_flow(
         request_id="demo_request",
         user_identifier=user_id,
-        match_found=True,
+        outcome=ScanAuditOutcome(match_found=True),
     )
     console.print("audit demo events written")
 

@@ -2,25 +2,47 @@ import hmac
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Annotated, ClassVar, override
+from typing import Annotated, ClassVar, Protocol, override, runtime_checkable
 from uuid import uuid4
 
+from anyio import to_thread
 from fastapi import Depends, FastAPI, File, Header, Request, UploadFile
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
-from big_brother.audit.log import AuditLog
+from big_brother.audit.log import AuditLog, ScanAuditOutcome
+from big_brother.decision.engine import DecisionEngine
 from big_brother.decision.review import HumanReviewWorkflow, MissingOverrideReasonError
 from big_brother.domain.hashes import HashBankEntry
-from big_brother.domain.policy import Policy
+from big_brother.domain.policy import ModelSignal, Policy
 from big_brother.hashbank.ingest import HashBankImportError
 from big_brother.matching.engine import KnownContentMatcher
 from big_brother.matching.loader import load_hash_entries
+from big_brother.models.config import load_moderation_config
+from big_brother.models.hf_moderation import TransformersImageModerationClient
 
 DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 DEFAULT_AUDIT_LOG_PATH = Path(".omo/evidence/api-audit.jsonl")
+DEFAULT_DEV_HASHBANK_PATH = Path("tests/fixtures/hashbanks/known-match.jsonl")
+PLACEHOLDER_ADMIN_TOKENS = frozenset(
+    {"", "change-this-local-admin-token", "replace-with-random-production-token"}
+)
+MODEL_TRIAGE_DISABLED_VALUES = frozenset({"", "0", "false", "no", "off"})
+
+
+@runtime_checkable
+class ModelModerator(Protocol):
+    def classify(self, *, image_bytes: bytes) -> ModelSignal: ...
+
+
+
+
+class ProductionConfigError(RuntimeError):
+    pass
+
+
 
 
 class ApiSettings(BaseModel):
@@ -32,6 +54,7 @@ class ApiSettings(BaseModel):
     max_upload_bytes: int = Field(default=DEFAULT_MAX_UPLOAD_BYTES, gt=0)
     audit_log_path: Path | None = None
     hashbank_path: Path | None = None
+    model_moderator: ModelModerator | None = None
 
 
 class ErrorResponse(BaseModel):
@@ -96,6 +119,7 @@ class ApiRoutes:
     settings: ApiSettings
     matcher: KnownContentMatcher
     audit_log: AuditLog | None
+    decision_engine: DecisionEngine
 
     def require_admin(
         self,
@@ -136,19 +160,38 @@ class ApiRoutes:
             )
 
         request_id = f"scan_{uuid4().hex}"
-        decision = self.matcher.scan(image_bytes)
-        match_found = decision.decision == "blocked"
+        known_decision = self.matcher.scan(image_bytes)
+        model_signal = None
+        if known_decision.decision != "blocked" and self.settings.model_moderator is not None:
+            model_signal = await to_thread.run_sync(
+                _classify_model_signal,
+                self.settings.model_moderator,
+                image_bytes,
+            )
+        decision = self.decision_engine.decide(
+            known_match=known_decision,
+            model_signal=model_signal,
+        )
+        match_found = known_decision.decision == "blocked"
         if self.audit_log is not None:
             self.audit_log.record_scan_flow(
                 request_id=request_id,
                 user_identifier="anonymous",
-                match_found=match_found,
+                outcome=ScanAuditOutcome(
+                    match_found=match_found,
+                    model_signal_recorded=model_signal is not None,
+                    decision=decision.outcome,
+                    decision_reason=decision.reason,
+                ),
             )
         return ScanResponse(
-            decision=decision.decision,
+            decision=decision.outcome,
             reason=decision.reason,
             request_id=request_id,
-            audit_event_ids=_audit_event_ids(match_found=match_found),
+            audit_event_ids=_audit_event_ids(
+                match_found=match_found,
+                model_signal_recorded=model_signal is not None,
+            ),
         )
 
     def hashbank_import_status(self) -> ImportStatusResponse:
@@ -206,6 +249,7 @@ def create_app(*, settings: ApiSettings) -> FastAPI:
         settings=settings,
         matcher=KnownContentMatcher(entries=settings.hash_entries),
         audit_log=_audit_log(settings),
+        decision_engine=DecisionEngine(),
     )
 
     app.add_exception_handler(StructuredApiError, structured_error_handler)
@@ -234,24 +278,48 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 def create_default_app() -> FastAPI:
-    settings = ApiSettings(
-        hash_entries=_load_default_entries(),
-        dev_mode=_env_bool("BIG_BROTHER_DEV_MODE", default=True),
-        admin_token=os.environ.get("BIG_BROTHER_ADMIN_TOKEN"),
-        audit_log_path=DEFAULT_AUDIT_LOG_PATH,
-        hashbank_path=Path("tests/fixtures/hashbanks/known-match.jsonl"),
+    return create_app(settings=_default_settings_from_env())
+
+
+def _default_settings_from_env() -> ApiSettings:
+    dev_mode = _env_bool("BIG_BROTHER_DEV_MODE", default=True)
+    hashbank_path = _env_path("BIG_BROTHER_HASHBANK_PATH")
+    if hashbank_path is None and dev_mode:
+        hashbank_path = DEFAULT_DEV_HASHBANK_PATH
+    entries = _load_runtime_entries(path=hashbank_path, dev_mode=dev_mode)
+    admin_token = os.environ.get("BIG_BROTHER_ADMIN_TOKEN")
+    _validate_admin_token(dev_mode=dev_mode, admin_token=admin_token)
+    return ApiSettings(
+        hash_entries=entries,
+        dev_mode=dev_mode,
+        admin_token=admin_token,
+        max_upload_bytes=_env_int("BIG_BROTHER_MAX_UPLOAD_BYTES", default=DEFAULT_MAX_UPLOAD_BYTES),
+        audit_log_path=_env_path("BIG_BROTHER_AUDIT_LOG_PATH") or DEFAULT_AUDIT_LOG_PATH,
+        hashbank_path=hashbank_path,
+        model_moderator=_model_moderator_from_env(),
     )
-    return create_app(settings=settings)
 
 
-def _load_default_entries() -> tuple[HashBankEntry, ...]:
-    path = Path("tests/fixtures/hashbanks/known-match.jsonl")
-    if not path.exists():
-        return ()
+def _load_runtime_entries(*, path: Path | None, dev_mode: bool) -> tuple[HashBankEntry, ...]:
+    if path is None:
+        if dev_mode:
+            return ()
+        message = "BIG_BROTHER_HASHBANK_PATH is required when BIG_BROTHER_DEV_MODE=false"
+        raise ProductionConfigError(message)
     try:
-        return load_hash_entries(path)
-    except HashBankImportError:
-        return ()
+        entries = load_hash_entries(path)
+    except FileNotFoundError as error:
+        if dev_mode and path == DEFAULT_DEV_HASHBANK_PATH:
+            return ()
+        message = f"hashbank file not found: {path}"
+        raise ProductionConfigError(message) from error
+    except HashBankImportError as error:
+        message = f"invalid hashbank file {path}: {error}"
+        raise ProductionConfigError(message) from error
+    if not dev_mode and len(entries) == 0:
+        message = f"production hashbank is empty: {path}"
+        raise ProductionConfigError(message)
+    return entries
 
 
 def _env_bool(name: str, *, default: bool) -> bool:
@@ -261,16 +329,71 @@ def _env_bool(name: str, *, default: bool) -> bool:
     return value.lower() in {"1", "true", "yes", "on"}
 
 
+def _env_int(name: str, *, default: int) -> int:
+    value = os.environ.get(name)
+    if value is None or value == "":
+        return default
+    try:
+        parsed = int(value)
+    except ValueError as error:
+        message = f"{name} must be an integer"
+        raise ProductionConfigError(message) from error
+    if parsed <= 0:
+        message = f"{name} must be greater than zero"
+        raise ProductionConfigError(message)
+    return parsed
+
+
+def _env_path(name: str) -> Path | None:
+    value = os.environ.get(name)
+    if value is None or value == "":
+        return None
+    return Path(value)
+
+
+def _validate_admin_token(*, dev_mode: bool, admin_token: str | None) -> None:
+    if dev_mode:
+        return
+    if admin_token is None or admin_token in PLACEHOLDER_ADMIN_TOKENS:
+        message = (
+            "BIG_BROTHER_ADMIN_TOKEN must be set to a non-placeholder value "
+            "when BIG_BROTHER_DEV_MODE=false"
+        )
+        raise ProductionConfigError(message)
+
+
+def _model_moderator_from_env() -> ModelModerator | None:
+    enabled = os.environ.get("BIG_BROTHER_MODEL_TRIAGE_ENABLED", "false").casefold()
+    if enabled in MODEL_TRIAGE_DISABLED_VALUES:
+        return None
+    config_path = _env_path("BIG_BROTHER_MODEL_CONFIG_PATH")
+    if config_path is None:
+        message = (
+            "BIG_BROTHER_MODEL_CONFIG_PATH is required when "
+            "BIG_BROTHER_MODEL_TRIAGE_ENABLED=true"
+        )
+        raise ProductionConfigError(message)
+    return TransformersImageModerationClient(config=load_moderation_config(config_path))
+
+
+def _classify_model_signal(moderator: ModelModerator, image_bytes: bytes) -> ModelSignal:
+    return moderator.classify(image_bytes=image_bytes)
+
+
 def _audit_log(settings: ApiSettings) -> AuditLog | None:
     if settings.audit_log_path is None:
         return None
     return AuditLog(path=settings.audit_log_path)
 
 
-def _audit_event_ids(*, match_found: bool) -> tuple[str, ...]:
+def _audit_event_ids(*, match_found: bool, model_signal_recorded: bool) -> tuple[str, ...]:
+    event_ids = ["ingest", "scan"]
     if match_found:
-        return ("ingest", "scan", "match", "decision")
-    return ("ingest", "scan", "decision")
+        event_ids.append("match")
+    if model_signal_recorded:
+        event_ids.append("model_signal")
+    event_ids.append("decision")
+    return tuple(event_ids)
 
 
 def _admin_token_matches(

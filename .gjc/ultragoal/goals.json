@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "brief": "Execute approved ralplan `/data/home/jeffrey/Projects-dev/big-brother/.gjc/plans/ralplan/2026-06-10-0219-b887/pending-approval.md`. User explicitly approved TDD, manual QA, commit well, and push to main.\n\nConstraints: preserve local-first/no-telemetry, no real illegal media, no external reporting, no fake PDQ/model integrations, fail explicitly for unsafe production config, verify with focused and full gates, inspect diff before commit, push to main without force-push.\n\n@goal: Harden production hashbank and deployment config\nImplement env-backed production hashbank loading for API/default app, remove test fixture hashbank defaults from production Docker image, add Compose read-only operator hashbank mount/env and production-safe `.env.example`, fail explicitly or report unmistakably non-ready when production hashbank/admin token config is missing, invalid, empty, or placeholder.\n\n@goal: Align scan behavior for PDQ and optional model triage\nKeep SHA known-match precedence, do not claim PDQ upload scanning without real image-to-PDQ computation, add optional local model triage through a safe disabled-by-default injected backend seam if feasible using existing code, otherwise narrow docs truthfully. Model signal must never create a model-only illegal decision.\n\n@goal: Harden public docs and operator runbook\nUpdate README, API docs, operator guide, release checklist, and docs tests so operators can run production-like local deployment with explicit hashbank/model config, admin token enforcement, audit export, manual QA, and truthful PDQ/model scope.\n\n@goal: Verify, manual QA, commit, and push\nRun focused tests during TDD, full pytest/ruff/basedpyright/docker compose config, manual API/CLI QA. Attempt Docker build/Compose runtime QA and record if daemon permission blocks. Inspect final diff, commit logically, and push to main.",
+  "gjcGoalMode": "aggregate",
+  "gjcObjective": "Complete the durable ultragoal plan in .gjc/ultragoal/goals.json, including later accepted/appended stories, under the original brief constraints; use .gjc/ultragoal/ledger.jsonl as the audit trail.",
+  "goals": [
+    {
+      "id": "G001",
+      "title": "Harden production hashbank and deployment config",
+      "objective": "Implement env-backed production hashbank loading for API/default app, remove test fixture hashbank defaults from production Docker image, add Compose read-only operator hashbank mount/env and production-safe `.env.example`, fail explicitly or report unmistakably non-ready when production hashbank/admin token config is missing, invalid, empty, or placeholder.",
+      "status": "complete",
+      "createdAt": "2026-06-10T02:35:18.634Z",
+      "updatedAt": "2026-06-10T03:51:52.208Z",
+      "startedAt": "2026-06-10T02:35:51.365Z",
+      "completedAt": "2026-06-10T03:51:52.208Z",
+      "evidence": "Implemented production hashbank/deploy hardening: env-backed BIG_BROTHER_HASHBANK_PATH, production missing/invalid/empty hashbank failures, placeholder admin-token rejection, Dockerfile fixture removal, Compose read-only hashbank mount/env, .env.example production defaults. Verified by pytest, ruff, basedpyright, compose config, manual QA, architect and executor QA gates.",
+      "completionVerification": {
+        "schemaVersion": 1,
+        "receiptId": "e9dc1843-49f9-4147-a523-40c75a663bd3",
+        "verifiedAt": "2026-06-10T03:51:52.208Z",
+        "goalId": "G001",
+        "receiptKind": "per-goal",
+        "goalStatusBeforeCheckpoint": "active",
+        "gjcGoalMode": "aggregate",
+        "gjcObjective": "Complete the durable ultragoal plan in .gjc/ultragoal/goals.json, including later accepted/appended stories, under the original brief constraints; use .gjc/ultragoal/ledger.jsonl as the audit trail.",
+        "qualityGateHash": "b2a02274509da3675113544afc0ede557101f5b3333ce56dfe4a581e139ba82a",
+        "gjcGoalSnapshotHash": "e2e6f51caf3dfb1158982c88611ca65e7f1f079f6da666d1f87f404dc5e4a319",
+        "planGeneration": "469c64f5594446fc4ba7fbc89ce108a5e27ca9dfaa4c086583692dcb50f6c066",
+        "basis": {
+          "planHashBeforeCheckpoint": "bd02fb5280fb4ef32209d029f3fdd81e3c398319f04ab5fc0902e3bcfae3897e",
+          "latestRelevantLedgerEventIdBeforeCheckpoint": "3aa19dbe-9bc7-46a0-9639-e05dad4f8360",
+          "goalUpdatedAtBeforeCheckpoint": "2026-06-10T03:51:52.208Z",
+          "relevantGoalIdsBeforeCheckpoint": [
+            "G001"
+          ],
+          "requiredGoalSetHashBeforeCheckpoint": "1ff1b64f7b87695880f6b592270ce2f51f9d2f0924f1aa1bbac617953fbb187b"
+        },
+        "checkpointLedgerEventId": "625a437e-e5a9-43e6-8049-a2a9f4086cfb"
+      }
+    },
+    {
+      "id": "G002",
+      "title": "Align scan behavior for PDQ and optional model triage",
+      "objective": "Keep SHA known-match precedence, do not claim PDQ upload scanning without real image-to-PDQ computation, add optional local model triage through a safe disabled-by-default injected backend seam if feasible using existing code, otherwise narrow docs truthfully. Model signal must never create a model-only illegal decision.",
+      "status": "complete",
+      "createdAt": "2026-06-10T02:35:18.634Z",
+      "updatedAt": "2026-06-10T03:52:27.723Z",
+      "startedAt": "2026-06-10T03:51:52.495Z",
+      "completedAt": "2026-06-10T03:52:27.723Z",
+      "evidence": "Aligned scan behavior: known SHA match takes precedence, optional model triage is disabled by default and operator-configured, synchronous classifier work is offloaded, model-only decisions route through DecisionEngine and cannot become illegal, model_signal response IDs and audit events persist when triage runs, PDQ upload scanning is truthfully documented as not implemented. Verified by scan/audit tests, full pytest, manual QA, architect review, and executor red-team QA.",
+      "completionVerification": {
+        "schemaVersion": 1,
+        "receiptId": "b6388820-ddb4-4c6a-a81c-ffed7e4caef4",
+        "verifiedAt": "2026-06-10T03:52:27.723Z",
+        "goalId": "G002",
+        "receiptKind": "per-goal",
+        "goalStatusBeforeCheckpoint": "active",
+        "gjcGoalMode": "aggregate",
+        "gjcObjective": "Complete the durable ultragoal plan in .gjc/ultragoal/goals.json, including later accepted/appended stories, under the original brief constraints; use .gjc/ultragoal/ledger.jsonl as the audit trail.",
+        "qualityGateHash": "b2a02274509da3675113544afc0ede557101f5b3333ce56dfe4a581e139ba82a",
+        "gjcGoalSnapshotHash": "e2e6f51caf3dfb1158982c88611ca65e7f1f079f6da666d1f87f404dc5e4a319",
+        "planGeneration": "f9fd60f9651a7eaa6cb50f0d9adf639098f1b7076f4de8b4bbdfd0f22a0d9430",
+        "basis": {
+          "planHashBeforeCheckpoint": "86765153e3e9cce6fff87600919ac3ff465b9c14ef623c37bd4e842e2bf0142c",
+          "latestRelevantLedgerEventIdBeforeCheckpoint": "40d38920-1f71-4fae-b460-5e3c5568de19",
+          "goalUpdatedAtBeforeCheckpoint": "2026-06-10T03:52:27.723Z",
+          "relevantGoalIdsBeforeCheckpoint": [
+            "G002"
+          ],
+          "requiredGoalSetHashBeforeCheckpoint": "5edfee496e625530523e6bc931b6b97af78a02ad6f97c6e20449e83b32fb5e9c"
+        },
+        "checkpointLedgerEventId": "fa437341-8e99-401b-adae-83ed4367060f"
+      }
+    },
+    {
+      "id": "G003",
+      "title": "Harden public docs and operator runbook",
+      "objective": "Update README, API docs, operator guide, release checklist, and docs tests so operators can run production-like local deployment with explicit hashbank/model config, admin token enforcement, audit export, manual QA, and truthful PDQ/model scope.",
+      "status": "complete",
+      "createdAt": "2026-06-10T02:35:18.634Z",
+      "updatedAt": "2026-06-10T03:52:49.216Z",
+      "startedAt": "2026-06-10T03:52:28.182Z",
+      "completedAt": "2026-06-10T03:52:49.216Z",
+      "evidence": "Hardened README, API docs, operator guide, release checklist, and docs tests for production hashbank/model config, admin-token enforcement, audit export/manual QA, disabled default model triage, SHA upload matching, and truthful PDQ scope. Verified by docs tests, source review, architect review, executor QA, and full verification.",
+      "completionVerification": {
+        "schemaVersion": 1,
+        "receiptId": "c8554e13-3795-4598-9b6f-5b5ed90d8ecb",
+        "verifiedAt": "2026-06-10T03:52:49.216Z",
+        "goalId": "G003",
+        "receiptKind": "per-goal",
+        "goalStatusBeforeCheckpoint": "active",
+        "gjcGoalMode": "aggregate",
+        "gjcObjective": "Complete the durable ultragoal plan in .gjc/ultragoal/goals.json, including later accepted/appended stories, under the original brief constraints; use .gjc/ultragoal/ledger.jsonl as the audit trail.",
+        "qualityGateHash": "b2a02274509da3675113544afc0ede557101f5b3333ce56dfe4a581e139ba82a",
+        "gjcGoalSnapshotHash": "e2e6f51caf3dfb1158982c88611ca65e7f1f079f6da666d1f87f404dc5e4a319",
+        "planGeneration": "4fafa7b4f0545f15fb05fc072334bc6e33f0227077ebcde853af38c8c5a55000",
+        "basis": {
+          "planHashBeforeCheckpoint": "5427944a68ff4fbf1e3056e89936776119b0aa728a609cbfe6e24d8c3296f2c8",
+          "latestRelevantLedgerEventIdBeforeCheckpoint": "149cd73e-f348-4836-9043-ea61044daa7b",
+          "goalUpdatedAtBeforeCheckpoint": "2026-06-10T03:52:49.216Z",
+          "relevantGoalIdsBeforeCheckpoint": [
+            "G003"
+          ],
+          "requiredGoalSetHashBeforeCheckpoint": "a8e53f88ab72a6d5a87e3eb9e2ceef10e7346c029e13abf4bae6402920c008fc"
+        },
+        "checkpointLedgerEventId": "37c5b463-d2c0-4f0b-a207-5ee9ce7370cf"
+      }
+    },
+    {
+      "id": "G004",
+      "title": "Verify, manual QA, commit, and push",
+      "objective": "Run focused tests during TDD, full pytest/ruff/basedpyright/docker compose config, manual API/CLI QA. Attempt Docker build/Compose runtime QA and record if daemon permission blocks. Inspect final diff, commit logically, and push to main.",
+      "status": "active",
+      "createdAt": "2026-06-10T02:35:18.634Z",
+      "updatedAt": "2026-06-10T03:52:49.771Z",
+      "startedAt": "2026-06-10T03:52:49.771Z"
+    }
+  ],
+  "createdAt": "2026-06-10T02:35:18.634Z",
+  "updatedAt": "2026-06-10T03:52:49.771Z"
+}

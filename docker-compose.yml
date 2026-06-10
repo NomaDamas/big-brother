@@ -6,10 +6,16 @@ services:
     environment:
       BIG_BROTHER_DEV_MODE: ${BIG_BROTHER_DEV_MODE:-true}
       BIG_BROTHER_ADMIN_TOKEN: ${BIG_BROTHER_ADMIN_TOKEN:-}
+      BIG_BROTHER_HASHBANK_PATH: ${BIG_BROTHER_HASHBANK_PATH:-/data/hashbanks/operator-known-match.jsonl}
+      BIG_BROTHER_AUDIT_LOG_PATH: ${BIG_BROTHER_AUDIT_LOG_PATH:-/app/.omo/evidence/api-audit.jsonl}
+      BIG_BROTHER_MAX_UPLOAD_BYTES: ${BIG_BROTHER_MAX_UPLOAD_BYTES:-10485760}
+      BIG_BROTHER_MODEL_TRIAGE_ENABLED: ${BIG_BROTHER_MODEL_TRIAGE_ENABLED:-false}
+      BIG_BROTHER_MODEL_CONFIG_PATH: ${BIG_BROTHER_MODEL_CONFIG_PATH:-}
     ports:
       - "${BIG_BROTHER_API_PORT:-8080}:8080"
     volumes:
       - big_brother_audit:/app/.omo/evidence
+      - ./data/hashbanks:/data/hashbanks:ro
     depends_on:
       triton:
         condition: service_started

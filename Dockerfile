@@ -9,7 +9,6 @@ WORKDIR /app
 COPY --from=ghcr.io/astral-sh/uv:0.9.17 /uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
-COPY tests/fixtures/hashbanks ./tests/fixtures/hashbanks
 
 RUN uv sync --frozen --no-dev
 

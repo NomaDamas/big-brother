@@ -16,6 +16,16 @@ class AuditEvent(BaseModel):
     detail: str = Field(min_length=1)
 
 
+class ScanAuditOutcome(BaseModel):
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
+
+    match_found: bool
+    model_signal_recorded: bool = False
+    decision: str | None = None
+    decision_reason: str | None = None
+
+
+
 class AuditLog:
     def __init__(self, *, path: Path) -> None:
         self._path: Path = path
@@ -26,7 +36,7 @@ class AuditLog:
         *,
         request_id: str,
         user_identifier: str,
-        match_found: bool,
+        outcome: ScanAuditOutcome,
     ) -> None:
         pseudonym = pseudonymize_user(user_identifier)
         self._append(
@@ -41,18 +51,25 @@ class AuditLog:
             user_pseudonym=pseudonym,
             detail="hash_and_model_checks_started",
         )
-        if match_found:
+        if outcome.match_found:
             self._append(
                 event_type="match",
                 request_id=request_id,
                 user_pseudonym=pseudonym,
                 detail="known_illegal_match",
             )
+        if outcome.model_signal_recorded:
+            self._append(
+                event_type="model_signal",
+                request_id=request_id,
+                user_pseudonym=pseudonym,
+                detail=outcome.decision_reason or "policy_model_signal",
+            )
         self._append(
             event_type="decision",
             request_id=request_id,
             user_pseudonym=pseudonym,
-            detail="blocked" if match_found else "allowed",
+            detail=outcome.decision or ("blocked" if outcome.match_found else "allowed"),
         )
 
     def export_events(self) -> tuple[AuditEvent, ...]:
