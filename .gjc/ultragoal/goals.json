@@ -110,12 +110,40 @@
       "id": "G004",
       "title": "Verify, manual QA, commit, and push",
       "objective": "Run focused tests during TDD, full pytest/ruff/basedpyright/docker compose config, manual API/CLI QA. Attempt Docker build/Compose runtime QA and record if daemon permission blocks. Inspect final diff, commit logically, and push to main.",
-      "status": "active",
+      "status": "complete",
       "createdAt": "2026-06-10T02:35:18.634Z",
-      "updatedAt": "2026-06-10T03:52:49.771Z",
-      "startedAt": "2026-06-10T03:52:49.771Z"
+      "updatedAt": "2026-06-10T03:59:39.519Z",
+      "startedAt": "2026-06-10T03:52:49.771Z",
+      "completedAt": "2026-06-10T03:59:39.519Z",
+      "evidence": "Completed final verification, manual QA, review gates, commit, and push. Verification passed: pytest 72 passed, ruff passed, basedpyright passed, docker compose config passed, demo passed, manual production-mode API QA passed. Docker build was attempted and blocked by local Docker socket permission. Diff inspected and committed as 6a97610; pushed to origin/main.",
+      "completionVerification": {
+        "schemaVersion": 1,
+        "receiptId": "74708ebc-2972-490f-a7e4-c8fe1fe05e44",
+        "verifiedAt": "2026-06-10T03:59:39.519Z",
+        "goalId": "G004",
+        "receiptKind": "final-aggregate",
+        "goalStatusBeforeCheckpoint": "active",
+        "gjcGoalMode": "aggregate",
+        "gjcObjective": "Complete the durable ultragoal plan in .gjc/ultragoal/goals.json, including later accepted/appended stories, under the original brief constraints; use .gjc/ultragoal/ledger.jsonl as the audit trail.",
+        "qualityGateHash": "2129bdb6f7f791aeba18de714af874f31608e3b45181a361ca6233439d615f28",
+        "gjcGoalSnapshotHash": "591f543fa9271315fbaf449027ef06fdce63d9e6b8414318de643723570f959e",
+        "planGeneration": "9fdfbbd712d90fbd6230cc738f06c10cdd942310b6c2b08c22b47b582490bfff",
+        "basis": {
+          "planHashBeforeCheckpoint": "180c32bcc6012b37b2ae4ea7de52d3510eb3f02bc0195e378b71fe8b9519df39",
+          "latestRelevantLedgerEventIdBeforeCheckpoint": "139b2ecc-e18f-4c7f-98a5-240e003005ad",
+          "goalUpdatedAtBeforeCheckpoint": "2026-06-10T03:59:39.519Z",
+          "relevantGoalIdsBeforeCheckpoint": [
+            "G001",
+            "G002",
+            "G003",
+            "G004"
+          ],
+          "requiredGoalSetHashBeforeCheckpoint": "1bd598bc75f42675e73b1789b8095509ba4a24b83229f6d0a1afaa1bde109cd5"
+        },
+        "checkpointLedgerEventId": "56faf492-78e2-4a01-a6d1-937f515513b4"
+      }
     }
   ],
   "createdAt": "2026-06-10T02:35:18.634Z",
-  "updatedAt": "2026-06-10T03:52:49.771Z"
+  "updatedAt": "2026-06-10T03:59:39.519Z"
 }
